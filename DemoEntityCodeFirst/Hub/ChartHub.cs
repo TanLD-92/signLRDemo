@@ -21,6 +21,7 @@ namespace SignalRChat
         public static bool _isLoadInfo = false;
         public static bool _timerLoad = false;
         Thread _loadDateTime;
+        Task _taskTime;
         List<User> _listUser;
         private static List<Account> _listcurrentAccounts
             = new List<Account>();
@@ -175,7 +176,7 @@ namespace SignalRChat
                         managerUser.UserGroups.Add(userGroup);
                         managerUser.SaveChanges();
                     }
-                    List<int> listIdAccount = (from group1 in managerUser.UserGroups where group1.ID == idGroup select group1.UserId).ToList();
+                    List<int> listIdAccount = (from group1 in managerUser.UserGroups where group1.GroupId == idGroup select group1.UserId).ToList();
                     List<User> listUser = new List<User>();
                     foreach (var userItemId in listIdAccount)
                     {
@@ -231,16 +232,17 @@ namespace SignalRChat
         public async Task NowDate()
         {
             await Task.Run(() => GetDateRealTime());
-            //_loadDateTime = new Thread(() => GetDateRealTime());
-            //_loadDateTime.Start();
-            //_timerLoad = true;
-        }
-        public void GetDateRealTime()
+
+        //_loadDateTime = new Thread(() => GetDateRealTime());
+        //_loadDateTime.Start();
+        //_timerLoad = true;
+    }
+        public async Task GetDateRealTime()
         {
             while (true)
             {
                 var currentDate = DateTime.Now.ToString();
-                 Clients.All.loadDate(currentDate);
+               await Clients.All.loadDate(currentDate);
                 System.Threading.Thread.Sleep(1000);
             }
         }

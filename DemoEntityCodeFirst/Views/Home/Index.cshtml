@@ -94,14 +94,12 @@
                     $("#form-chat-content").append("\r\n"+message.toString());
                 }
                 //load member in group
-                chat.client.loadMember = function (listMember) {
+                chat.client.loadMember = function (item) {
+                    console.log(item);
                     $('#list-member-in-group').empty();
-                    $.each(listMember, function (key,value) {
-                        $('#list-member-in-group').append('<li>' + value.UserName + '</li>');
+                    $.each(item, function (key, value) {
+                        $('#list-member-in-group').append('<li>' + value.Name + '</li>');
                     });
-                        //listMember.forEach(function (item) {
-
-                        //});
                 }
                     // Add the message to the page.
                 // Start the connection.
@@ -135,6 +133,7 @@
                     $('#add-member').click(function () {
                         chat.server.addMember(userNameCurrent.toString(), $(' #select-container-member').val(), $(' #list-group').val());
                         // Clear text box and reset focus for next comment.
+                        alert("Add Succesful");
                         $('#input-group-lg').val('').focus();
                     });
                     //Event choose group
@@ -167,20 +166,22 @@
             });
         });
         function setCookie(cName, cValue, path) {
-            console.log(cName + ":" + cValue);
-            document.cookie = cName + "=" + cValue + ";path=" + path;
+            //document.cookie = cName + "=" + cValue + ";path=" + path;
+            sessionStorage.setItem(cName, cValue);
+            console.log(sessionStorage.getItem(cName));
         }
 
         // Get Cookie
         function getCookie(cName) {
-            var name = cName + "=";
-            var ca = document.cookie.split(';');
-            for (var i = 0; i < ca.length; i++) {
-                var c = ca[i];
-                while (c.charAt(0) == ' ') c = c.substring(1);
-                if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
-            }
-            return "";
+            //var name = cName + "=";
+            //var ca = document.cookie.split(';');
+            //for (var i = 0; i < ca.length; i++) {
+            //    var c = ca[i];
+            //    while (c.charAt(0) == ' ') c = c.substring(1);
+            //    if (c.indexOf(name) == 0) return c.substring(name.length, c.length);
+            //}
+            //return "";
+            return sessionStorage.getItem(cName)
         }
     </script>
 }
