@@ -12,12 +12,7 @@ namespace DemoEntityCodeFirst.Models
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ID { get; set; }
-        [ForeignKey("User")]
         public int UserId { get; set; }
-        [ForeignKey("Group")]
         public int GroupId { get; set; }
-
-        public virtual User User { get; set; }
-        public virtual Group Group { get; set; }
     }
 }

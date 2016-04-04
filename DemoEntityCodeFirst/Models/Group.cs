@@ -13,7 +13,5 @@ namespace DemoEntityCodeFirst.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ID { get; set; }
         public string NameGroup { get; set; }
-        public virtual ICollection<UserGroup> UserGroups { get; set; }
-        public virtual ICollection<MessageBox> MessageBoxes { get; set; }
     }
 }

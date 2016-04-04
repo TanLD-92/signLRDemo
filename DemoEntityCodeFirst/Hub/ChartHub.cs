@@ -13,6 +13,7 @@ using System.Collections.Concurrent;
 
 namespace SignalRChat
 {
+    [HubName("chatHub")]
     public class ChatHub : Hub
     {
 
@@ -24,10 +25,10 @@ namespace SignalRChat
         private static List<Account> _listcurrentAccounts
             = new List<Account>();
 
-        public void LoadInfo(List<User> listUser)
-        {
-            Clients.All.loadInfo(listUser);
-        }
+        //public void LoadInfo(List<User> listUser)
+        //{
+        //    Clients.All.loadInfo(listUser);
+        //}
         public async Task LoadInfoDefault()
         {
             //Call the updateInfo method to update clients.
@@ -70,11 +71,15 @@ namespace SignalRChat
                 User userCurrent = await (from user in managerUser.Users where user.Name == userName select user).FirstOrDefaultAsync();
                 if (userCurrent != null)
                 {
-                    Account accoutNew = new Account();
-                    accoutNew.UserId = userCurrent.ID;
                     string IdConnected = Context.ConnectionId;
-                    accoutNew.ConnectId = IdConnected;
-                    _listcurrentAccounts.Add(accoutNew);
+                    var accountExist = (from account1 in _listcurrentAccounts where account1.ConnectId == IdConnected && account1.UserId == userCurrent.ID select account1).FirstOrDefault();
+                    if (accountExist == null)
+                    {
+                        Account accoutNew = new Account();
+                        accoutNew.UserId = userCurrent.ID;
+                        accoutNew.ConnectId = IdConnected;
+                        _listcurrentAccounts.Add(accoutNew);
+                    }
                     List<Account> listUserOfAccount = (from userCurrent1 in _listcurrentAccounts where userCurrent1.UserId == userCurrent.ID select userCurrent1).ToList();
                     List<int> idGroupUser = (from user1 in managerUser.UserGroups where user1.UserId == userCurrent.ID select user1.GroupId).ToList();
                     List<Group> listGroup = new List<Group>();
@@ -97,15 +102,19 @@ namespace SignalRChat
                 User userCurrent = await (from user in managerUser.Users where user.Name == userName select user).FirstOrDefaultAsync();
                 if (userCurrent != null)
                 {
-                    Group group = new Group();
-                    group.NameGroup = nameGroup;
-                    managerUser.Groups.Add(group);
-                    managerUser.SaveChanges();
-                    UserGroup userGroup = new UserGroup();
-                    userGroup.GroupId = (from group1 in managerUser.Groups where group1.NameGroup == nameGroup select group1.ID).FirstOrDefault();
-                    userGroup.UserId = userCurrent.ID;
-                    managerUser.UserGroups.Add(userGroup);
-                    managerUser.SaveChanges();
+                    var groupExist = (from groupExist1 in managerUser.Groups where groupExist1.NameGroup == nameGroup select groupExist1).FirstOrDefault();
+                    if(groupExist == null)
+                    {
+                        Group group = new Group();
+                        group.NameGroup = nameGroup;
+                        managerUser.Groups.Add(group);
+                        managerUser.SaveChanges();
+                        UserGroup userGroup = new UserGroup();
+                        userGroup.GroupId = (from group1 in managerUser.Groups where group1.NameGroup == nameGroup select group1.ID).FirstOrDefault();
+                        userGroup.UserId = userCurrent.ID;
+                        managerUser.UserGroups.Add(userGroup);
+                        managerUser.SaveChanges();
+                    }
                     List < Account> listUserOfAccount = (from userCurrent1 in _listcurrentAccounts where userCurrent1.UserId == userCurrent.ID select userCurrent1).ToList();
                     List<int> idGroupUser = (from user1 in managerUser.UserGroups where user1.UserId == userCurrent.ID select user1.GroupId).ToList();
                     List<Group> listGroup = new List<Group>();
@@ -157,11 +166,15 @@ namespace SignalRChat
                 //int idGroup = Int32.Parse(valueIdGroup);
                 using (var managerUser = new ManagerDbContext())
                 {
-                    UserGroup userGroup = new UserGroup();
-                    userGroup.UserId = idUser;
-                    userGroup.GroupId = idGroup;
-                    managerUser.UserGroups.Add(userGroup);
-                    managerUser.SaveChanges();
+                    var userGroupExist = (from userGroup1 in managerUser.UserGroups where userGroup1.UserId == idUser && userGroup1.GroupId == idGroup select userGroup1).FirstOrDefault();
+                    if(userGroupExist == null)
+                    {
+                        UserGroup userGroup = new UserGroup();
+                        userGroup.UserId = idUser;
+                        userGroup.GroupId = idGroup;
+                        managerUser.UserGroups.Add(userGroup);
+                        managerUser.SaveChanges();
+                    }
                     List<int> listIdAccount = (from group1 in managerUser.UserGroups where group1.ID == idGroup select group1.UserId).ToList();
                     List<User> listUser = new List<User>();
                     foreach (var userItemId in listIdAccount)
@@ -180,52 +193,75 @@ namespace SignalRChat
                 }
             }
         }
+        public async Task LoadBoxChatGroup(string userName, int idGroup)
+        {
+            using (ManagerDbContext managerUser = new ManagerDbContext())
+            {
+                User userCurrent = await (from user in managerUser.Users where user.Name == userName select user).FirstOrDefaultAsync();
+                if (userCurrent != null)
+                {
+                    var groupExist = (from groupExist1 in managerUser.Groups where groupExist1.ID == idGroup select groupExist1).FirstOrDefault();
+                    if (groupExist != null)
+                    {
+                        List<MessageBox> messageBox = (from message in managerUser.MessageBoxes where message.GroupId == idGroup select message).ToList();
+                        List<int> idUser = (from user in managerUser.UserGroups where user.GroupId == idGroup select user.UserId).ToList();
+                        foreach(var id in idUser)
+                        {
+                            List<Account> accountInGroup = (from account in _listcurrentAccounts where account.UserId == id select account).ToList();
+                            foreach(var accountItem in accountInGroup)
+                            {
+                                await Clients.Client(accountItem.ConnectId).showBoxChatGroup(messageBox);
+                            }
+                        }
+                    }
+                    
+                }
+            }
+        }
         public override Task OnDisconnected(bool stopCalled)
         {
+            Account account = (from userCurrent1 in _listcurrentAccounts where userCurrent1.ConnectId == Context.ConnectionId select userCurrent1).FirstOrDefault();
+            _listcurrentAccounts.Remove(account);
+            //if (_timerLoad)
+            //{
+            //    _loadDateTime.Abort();
+            //}
             return base.OnDisconnected(stopCalled);
         }
-        //    public void NowDate()
-        //    {
-        //        _loadDateTime = new Thread(() => GetDateRealTime());
-        //        _loadDateTime.Start();
-        //        _timerLoad = true;
-        //    }
-        //    public override Task OnDisconnected(bool stopCall)
-        //    {
-        //        if (_timerLoad)
-        //        {
-        //            _loadDateTime.Abort();
-        //        }
-        //        return base.OnDisconnected(stopCall);
-        //    }
-        //    public void GetDateRealTime()
-        //    {
-        //        while (true)
-        //        {
-        //            var currentDate = DateTime.Now.ToString();
-        //            Clients.All.loadDate(currentDate);
-        //            System.Threading.Thread.Sleep(1000);
-        //        }
-        //    }
-        //}
-        //[HubName("MessageHub")]
-        //public class MessageHub : Hub
-        //{
-        //    public async Task Connect(string userName)
-        //    {
-        //        string connectionId = Context.ConnectionId;
-        //        await Clients.Client(connectionId).showId(connectionId);
-        //    }
-        //    //private static ConcurrentDictionary<string, User> Accounts
-        //    //= new ConcurrentDictionary<string, User>();
-        //    //public async Task SessionAccount(int id, string userName)
-        //    //{
-        //    //    using(var managerUser = new ManagerDbContext())
-        //    //    {
-        //    //        var userCurrent = (from user in managerUser.Users where user.Name == userName select user).FirstOrDefaultAsync();
-
-        //    //    }
-        //    //}
+        public void NowDate()
+        {
+            _loadDateTime = new Thread(() => GetDateRealTime());
+            _loadDateTime.Start();
+            _timerLoad = true;
+        }
+        public void GetDateRealTime()
+        {
+            while (true)
+            {
+                var currentDate = DateTime.Now.ToString();
+                Clients.All.loadDate(currentDate);
+                System.Threading.Thread.Sleep(1000);
+            }
+        }
     }
+    //[HubName("MessageHub")]
+    //public class MessageHub : Hub
+    //{
+    //    public async Task Connect(string userName)
+    //    {
+    //        string connectionId = Context.ConnectionId;
+    //        await Clients.Client(connectionId).showId(connectionId);
+    //    }
+    //    //private static ConcurrentDictionary<string, User> Accounts
+    //    //= new ConcurrentDictionary<string, User>();
+    //    //public async Task SessionAccount(int id, string userName)
+    //    //{
+    //    //    using(var managerUser = new ManagerDbContext())
+    //    //    {
+    //    //        var userCurrent = (from user in managerUser.Users where user.Name == userName select user).FirstOrDefaultAsync();
 
+    //    //    }
+    //    //}
 }
+
+
