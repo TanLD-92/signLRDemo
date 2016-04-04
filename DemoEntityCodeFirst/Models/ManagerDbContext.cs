@@ -10,8 +10,12 @@ namespace DemoEntityCodeFirst.Models
     {
         public ManagerDbContext(): base("SignLRDemoVersionOne")
         {
+            //Database.SetInitializer<ManagerDbContext>(null);
         }
         public DbSet<Skill> Skills { get; set; }
         public DbSet<User> Users { get; set; }
+        public DbSet<Group> Groups { get; set; }
+        public DbSet<MessageBox> MessageBoxes { get; set; }
+        public DbSet<UserGroup> UserGroups { get; set; }
     }
 }

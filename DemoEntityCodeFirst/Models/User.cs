@@ -15,7 +15,8 @@ namespace DemoEntityCodeFirst.Models
         public string Name { get; set; }
         public string Division { get; set; }
         public int Experencde { get; set; }
-        public List<Skill> Skills { get; set; } // Navigation property
+        public virtual ICollection<Skill> Skills { get; set; } // Navigation property
+        public virtual ICollection<UserGroup> UserGroups { get; set; }
 
     }
 }
