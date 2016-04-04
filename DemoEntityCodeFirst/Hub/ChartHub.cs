@@ -228,40 +228,23 @@ namespace SignalRChat
             //}
             return base.OnDisconnected(stopCalled);
         }
-        public void NowDate()
+        public async Task NowDate()
         {
-            _loadDateTime = new Thread(() => GetDateRealTime());
-            _loadDateTime.Start();
-            _timerLoad = true;
+            await Task.Run(() => GetDateRealTime());
+            //_loadDateTime = new Thread(() => GetDateRealTime());
+            //_loadDateTime.Start();
+            //_timerLoad = true;
         }
         public void GetDateRealTime()
         {
             while (true)
             {
                 var currentDate = DateTime.Now.ToString();
-                Clients.All.loadDate(currentDate);
+                 Clients.All.loadDate(currentDate);
                 System.Threading.Thread.Sleep(1000);
             }
         }
     }
-    //[HubName("MessageHub")]
-    //public class MessageHub : Hub
-    //{
-    //    public async Task Connect(string userName)
-    //    {
-    //        string connectionId = Context.ConnectionId;
-    //        await Clients.Client(connectionId).showId(connectionId);
-    //    }
-    //    //private static ConcurrentDictionary<string, User> Accounts
-    //    //= new ConcurrentDictionary<string, User>();
-    //    //public async Task SessionAccount(int id, string userName)
-    //    //{
-    //    //    using(var managerUser = new ManagerDbContext())
-    //    //    {
-    //    //        var userCurrent = (from user in managerUser.Users where user.Name == userName select user).FirstOrDefaultAsync();
-
-    //    //    }
-    //    //}
 }
 
 
