@@ -4,7 +4,7 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2 id="date-container"></h2>
+<h3 id="date-container"></h3>
 <ul id="chart-container" style="width: 100%; height: 150px; list-style-type: none;"></ul>
 
 <select id="select-container"></select>
@@ -23,7 +23,8 @@
     <div class="col-sm-8 col-md-8 form-chat-container">
         <div class="member-action">
             <select id="select-container-member"></select><button id="add-member">+Add</button>
-            <ul class="list-member-in-group"></ul>
+            <span class="group-label"><span id="nameGroup"></span></span>
+            <div><label>List member:</label><ul class="list-member-in-group" id="list-member-in-group"></ul></div>
         </div>
         <textarea class="form-chat-content" id="form-chat-content" disabled></textarea>
         <input class="input-group-lg" id="input-group-lg" placeholder="Input message..."/><button id="send-message">Send message</button>
@@ -44,7 +45,8 @@
             $(function () {
                 // Reference the auto-generated proxy for the hub.
                 var userNameCurrent = '';
-                var groupCurrent = null;
+                var groupCurrent = 0;
+                var isRunTime = false;
                 chat.client.loadDate = function (currentDate) {
                     $("#date-container").empty();
                     $("#date-container").text(currentDate);
@@ -82,8 +84,16 @@
                         //});
                 }
                 //load message chat content
-                chat.client.showBoxChatGroup = function (messageBoxContent) {
+                chat.client.showBoxChatGroup = function (messageBoxContent, listUserInGroup, nameGroup) {
                     $("#form-chat-content").empty();
+                    $('#list-member-in-group').empty();
+                    $('#nameGroup').empty();
+                    if (nameGroup.length > 0) {
+                        $('#nameGroup').text("Group :" + nameGroup);
+                    }
+                    $.each(listUserInGroup, function (key, value) {
+                        $('#list-member-in-group').append('<li>' + value.Name + '</li>');
+                    });
                     $.each(messageBoxContent,function(key,value) {
                         $("#form-chat-content").append("\r\n" + value.MessageContent);
                         //console.log(item);
@@ -94,9 +104,14 @@
                     $("#form-chat-content").append("\r\n"+message.toString());
                 }
                 //load member in group
-                chat.client.loadMember = function (item) {
+                chat.client.loadMember = function (item, listGroup) {
                     console.log(item);
                     $('#list-member-in-group').empty();
+                    $('#list-group').empty();
+                    $.each(listGroup, function (key, value) {
+                        $('#list-group').append('<option class="group-option" value=' + value.ID + '>' + value.NameGroup + '</option>');
+                        //$('#list-group').append('<option class="group-option" value=' + value + '>' + value + '</option>');
+                    });
                     $.each(item, function (key, value) {
                         $('#list-member-in-group').append('<li>' + value.Name + '</li>');
                     });
@@ -131,14 +146,15 @@
                         $('#input-group-lg').val('').focus();
                     });
                     $('#add-member').click(function () {
-                        chat.server.addMember(userNameCurrent.toString(), $(' #select-container-member').val(), $(' #list-group').val());
+                        chat.server.addMember(userNameCurrent.toString(), $(' #select-container-member').val(), groupCurrent);
                         // Clear text box and reset focus for next comment.
-                        alert("Add Succesful");
+                        //alert("Add Succesful");
                         $('#input-group-lg').val('').focus();
                     });
                     //Event choose group
                     $('#join-group').click(function () {
-                        chat.server.loadBoxChatGroup(userNameCurrent.toString(), $(' #list-group').val());
+                        groupCurrent = $(' #list-group').val();
+                        chat.server.loadBoxChatGroup(userNameCurrent.toString(), groupCurrent);
                         // Clear text box and reset focus for next comment.
                         $('#input-group-lg').val('').focus();
                     });
@@ -153,7 +169,6 @@
                     chat.server.nowDate();
                     $.connection.hub.start().done(function () {
                         // Clear text box and reset focus for next comment.
-                        $('#input-user-name').val('').focus();
                     });
                 }
                 function setDefault() {

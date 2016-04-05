@@ -176,19 +176,27 @@ namespace SignalRChat
                         managerUser.UserGroups.Add(userGroup);
                         managerUser.SaveChanges();
                     }
-                    List<int> listIdAccount = (from group1 in managerUser.UserGroups where group1.GroupId == idGroup select group1.UserId).ToList();
-                    List<User> listUser = new List<User>();
-                    foreach (var userItemId in listIdAccount)
-                    {
-                        var user = (from userItem in managerUser.Users where userItem.ID == userItemId select userItem).FirstOrDefault();
-                        listUser.Add(user);
-                    }
-                    foreach (var item in listUser)
+                    //List<int> listIdAccount = (from group1 in managerUser.UserGroups where group1.GroupId == idGroup select group1.UserId).ToList();
+                    //List<User> listUser = new List<User>();
+                    //foreach (var userItemId in listIdAccount)
+                    //{
+                    //    var user = (from userItem in managerUser.Users where userItem.ID == userItemId select userItem).FirstOrDefault();
+                    //    listUser.Add(user);
+                    //}
+                    List<User> listUserInGroup = (from user in managerUser.Users
+                                                  join useGroup in managerUser.UserGroups on user.ID equals useGroup.UserId
+                                                  where useGroup.GroupId == idGroup
+                                                  select user).ToList();
+                    foreach (User item in listUserInGroup)
                     {
                         List<Account> listUserOfAccount = (from userCurrent1 in _listcurrentAccounts where userCurrent1.UserId == item.ID select userCurrent1).ToList();
+                        List<Group> listGroup = (from group1 in managerUser.Groups
+                                                 join useGroup in managerUser.UserGroups on group1.ID equals useGroup.GroupId
+                                                 where useGroup.UserId == item.ID
+                                                 select group1).ToList();
                         foreach (var item2 in listUserOfAccount)
                         {
-                            await Clients.Client(item2.ConnectId).loadMember(item);
+                            await Clients.Client(item2.ConnectId).loadMember(listUserInGroup, listGroup);
                         }
                     }
                 }
@@ -205,15 +213,19 @@ namespace SignalRChat
                     if (groupExist != null)
                     {
                         List<MessageBox> messageBox = (from message in managerUser.MessageBoxes where message.GroupId == idGroup select message).ToList();
-                        List<int> idUser = (from user in managerUser.UserGroups where user.GroupId == idGroup select user.UserId).ToList();
-                        foreach(var id in idUser)
+                        List<User> listUserInGroup = (from user in managerUser.Users
+                                                      join useGroup in managerUser.UserGroups on user.ID equals useGroup.UserId
+                                                      where useGroup.GroupId == idGroup
+                                                      select user).ToList();
+                        foreach(User userTem in listUserInGroup)
                         {
-                            List<Account> accountInGroup = (from account in _listcurrentAccounts where account.UserId == id select account).ToList();
-                            foreach(var accountItem in accountInGroup)
+                            List<Account> accountInGroup = (from account in _listcurrentAccounts where account.UserId == userTem.ID select account).ToList();
+                            foreach (var accountItem in accountInGroup)
                             {
-                                await Clients.Client(accountItem.ConnectId).showBoxChatGroup(messageBox);
+                                await Clients.Client(accountItem.ConnectId).showBoxChatGroup(messageBox,listUserInGroup, groupExist.NameGroup);
                             }
                         }
+
                     }
                     
                 }
@@ -229,20 +241,21 @@ namespace SignalRChat
             //}
             return base.OnDisconnected(stopCalled);
         }
-        public async Task NowDate()
+        public void NowDate()
         {
-            await Task.Run(() => GetDateRealTime());
+             Task.Run(() => GetDateRealTime());
 
-        //_loadDateTime = new Thread(() => GetDateRealTime());
-        //_loadDateTime.Start();
-        //_timerLoad = true;
-    }
+            //_loadDateTime = new Thread(() => GetDateRealTime());
+            //_timerLoad = true;
+            //_loadDateTime.Start();
+        }
+
         public async Task GetDateRealTime()
         {
             while (true)
             {
                 var currentDate = DateTime.Now.ToString();
-               await Clients.All.loadDate(currentDate);
+                await Clients.All.loadDate(currentDate);
                 System.Threading.Thread.Sleep(1000);
             }
         }

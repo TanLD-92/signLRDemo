@@ -30,16 +30,24 @@
    height: 50px;
 }
 .member-action .list-member-in-group {
-   display: block;
+   display: inline-block;
    min-height: 10px;
+   padding-left: 10px;
 }
 .member-action .list-member-in-group  li {
     display: inline-block;
+    margin-right: 5px;
+}
+.group-label {
+    font-size: 15px;
+    font-weight: 600;
+    float: right;
 }
 .form-chat-content {
     width: 100%;
     height: 100%;
     max-width: 100%;
+    font-weight: 600;
 }
 .input-group-lg {
     width: 70%;
