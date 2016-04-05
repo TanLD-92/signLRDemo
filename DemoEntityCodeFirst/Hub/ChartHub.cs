@@ -67,11 +67,19 @@ namespace SignalRChat
         }
         public async Task Connect(string userName)
         {
-            using (ManagerDbContext managerUser = new ManagerDbContext())
+            if(!userName.Equals(""))
             {
-                User userCurrent = await (from user in managerUser.Users where user.Name == userName select user).FirstOrDefaultAsync();
-                if (userCurrent != null)
+                using (ManagerDbContext managerUser = new ManagerDbContext())
                 {
+                    User userCurrentCheck = await (from user in managerUser.Users where user.Name == userName select user).FirstOrDefaultAsync();
+                    if (userCurrentCheck == null)
+                    {
+                        User userNew = new User();
+                        userNew.Name = userName;
+                        managerUser.Users.Add(userNew);
+                        managerUser.SaveChanges();
+                    }
+                    User userCurrent = await (from user in managerUser.Users where user.Name == userName select user).FirstOrDefaultAsync();
                     string IdConnected = Context.ConnectionId;
                     var accountExist = (from account1 in _listcurrentAccounts where account1.ConnectId == IdConnected && account1.UserId == userCurrent.ID select account1).FirstOrDefault();
                     if (accountExist == null)
@@ -98,35 +106,38 @@ namespace SignalRChat
         }
         public async Task CreateGrouponnect(string nameGroup, string userName)
         {
-            using (ManagerDbContext managerUser = new ManagerDbContext())
+            if(!nameGroup.Equals("") && !userName.Equals(""))
             {
-                User userCurrent = await (from user in managerUser.Users where user.Name == userName select user).FirstOrDefaultAsync();
-                if (userCurrent != null)
+                using (ManagerDbContext managerUser = new ManagerDbContext())
                 {
-                    var groupExist = (from groupExist1 in managerUser.Groups where groupExist1.NameGroup == nameGroup select groupExist1).FirstOrDefault();
-                    if(groupExist == null)
+                    User userCurrent = await (from user in managerUser.Users where user.Name == userName select user).FirstOrDefaultAsync();
+                    if (userCurrent != null)
                     {
-                        Group group = new Group();
-                        group.NameGroup = nameGroup;
-                        managerUser.Groups.Add(group);
-                        managerUser.SaveChanges();
-                        UserGroup userGroup = new UserGroup();
-                        userGroup.GroupId = (from group1 in managerUser.Groups where group1.NameGroup == nameGroup select group1.ID).FirstOrDefault();
-                        userGroup.UserId = userCurrent.ID;
-                        managerUser.UserGroups.Add(userGroup);
-                        managerUser.SaveChanges();
-                    }
-                    List < Account> listUserOfAccount = (from userCurrent1 in _listcurrentAccounts where userCurrent1.UserId == userCurrent.ID select userCurrent1).ToList();
-                    List<int> idGroupUser = (from user1 in managerUser.UserGroups where user1.UserId == userCurrent.ID select user1.GroupId).ToList();
-                    List<Group> listGroup = new List<Group>();
-                    foreach (var id in idGroupUser)
-                    {
-                        var item2 = (from groupitem in managerUser.Groups where groupitem.ID == id select groupitem).FirstOrDefault();
-                        listGroup.Add(item2);
-                    }
-                    foreach (var item in listUserOfAccount)
-                    {
-                        await Clients.Client(item.ConnectId).showUserName(userName, listGroup);
+                        var groupExist = (from groupExist1 in managerUser.Groups where groupExist1.NameGroup == nameGroup select groupExist1).FirstOrDefault();
+                        if (groupExist == null)
+                        {
+                            Group group = new Group();
+                            group.NameGroup = nameGroup;
+                            managerUser.Groups.Add(group);
+                            managerUser.SaveChanges();
+                            UserGroup userGroup = new UserGroup();
+                            userGroup.GroupId = (from group1 in managerUser.Groups where group1.NameGroup == nameGroup select group1.ID).FirstOrDefault();
+                            userGroup.UserId = userCurrent.ID;
+                            managerUser.UserGroups.Add(userGroup);
+                            managerUser.SaveChanges();
+                        }
+                        List<Account> listUserOfAccount = (from userCurrent1 in _listcurrentAccounts where userCurrent1.UserId == userCurrent.ID select userCurrent1).ToList();
+                        List<int> idGroupUser = (from user1 in managerUser.UserGroups where user1.UserId == userCurrent.ID select user1.GroupId).ToList();
+                        List<Group> listGroup = new List<Group>();
+                        foreach (var id in idGroupUser)
+                        {
+                            var item2 = (from groupitem in managerUser.Groups where groupitem.ID == id select groupitem).FirstOrDefault();
+                            listGroup.Add(item2);
+                        }
+                        foreach (var item in listUserOfAccount)
+                        {
+                            await Clients.Client(item.ConnectId).showUserName(userName, listGroup);
+                        }
                     }
                 }
             }
